@@ -15,13 +15,13 @@ class PostsViewTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.small_gif = (            
-             b'\x47\x49\x46\x38\x39\x61\x02\x00'
-             b'\x01\x00\x80\x00\x00\x00\x00\x00'
-             b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
-             b'\x00\x00\x00\x2C\x00\x00\x00\x00'
-             b'\x02\x00\x01\x00\x00\x02\x02\x0C'
-             b'\x0A\x00\x3B'
+        cls.small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x02\x00'
+            b'\x01\x00\x80\x00\x00\x00\x00\x00'
+            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
+            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
+            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
+            b'\x0A\x00\x3B'
         )
         cls.uploaded = SimpleUploadedFile(
             name='small.gif',
@@ -209,7 +209,7 @@ class PostsViewTests(TestCase):
         self.assertNotIn(post_with_group2, list(response.context['page_obj']))
 
     def test_add_image(self):
-        """При выводе поста с картинкой изображение 
+        """При выводе поста с картинкой изображение
         передаётся в словаре context.
         """
         contexts_pages = {
@@ -226,14 +226,14 @@ class PostsViewTests(TestCase):
             ],
             'post': reverse('posts:post_detail', kwargs={'post_id': 1})
         }
-        for context,pages in contexts_pages.items():
+        for context, pages in contexts_pages.items():
             with self.subTest(context=context):
                 if type(pages) is list:
                     for page in pages:
                         with self.subTest(page=page):
                             response = self.client.get(page)
                             objects = response.context[context]
-                            images = list(map(lambda x: x.image , objects))
+                            images = list(map(lambda x: x.image, objects))
                             self.assertIn(Post.objects.get(id=1).image, images)
                 else:
                     response = self.client.get(pages)
@@ -259,7 +259,7 @@ class PostsViewTests(TestCase):
         self.assertNotEqual(response1.content, response3.content)
 
     def test_follow_unfollow(self):
-        """Авторизованный пользователь может подписываться 
+        """Авторизованный пользователь может подписываться
         на других пользователей и удалять их из подписок.
         """
         author = self.user
@@ -285,7 +285,7 @@ class PostsViewTests(TestCase):
         )
 
     def test_new_post_follow(self):
-        """Новая запись пользователя появляется в ленте тех, 
+        """Новая запись пользователя появляется в ленте тех,
         кто на него подписан и не появляется в ленте тех, кто не подписан.
         """
         response1 = self.authorized_client2.get(

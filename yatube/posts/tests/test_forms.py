@@ -40,13 +40,13 @@ class PostsCreateFormTests(TestCase):
         создаётся новая запись в базе данных.
         """
         posts_count = Post.objects.count()
-        small_gif = (            
-             b'\x47\x49\x46\x38\x39\x61\x02\x00'
-             b'\x01\x00\x80\x00\x00\x00\x00\x00'
-             b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
-             b'\x00\x00\x00\x2C\x00\x00\x00\x00'
-             b'\x02\x00\x01\x00\x00\x02\x02\x0C'
-             b'\x0A\x00\x3B'
+        small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x02\x00'
+            b'\x01\x00\x80\x00\x00\x00\x00\x00'
+            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
+            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
+            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
+            b'\x0A\x00\x3B'
         )
         uploaded = SimpleUploadedFile(
             name='small.gif',
@@ -124,5 +124,8 @@ class PostsCreateFormTests(TestCase):
                 kwargs={'post_id': PostsCreateFormTests.post.id}
             )
         )
-        self.assertEqual(form_data1['text'], response.context['comments'][0].text)
+        self.assertEqual(
+            form_data1['text'],
+            response.context['comments'][0].text
+        )
         self.assertEqual(Comment.objects.count(), comments_count + 1)
