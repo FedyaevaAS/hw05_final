@@ -46,9 +46,7 @@ def profile(request, username):
     page_obj = paginator(post_list, posts_per_page, request)
     following = False
     if user.is_authenticated:
-        following_authors = user.follower.values_list('author', flat=True)
-        if author.id in following_authors:
-            following = True
+        following = Follow.objects.filter(user=user, author=author).exists()
     context = {
         'page_obj': page_obj,
         'author': author,
@@ -60,7 +58,7 @@ def profile(request, username):
 def post_detail(request, post_id):
     template = 'posts/post_detail.html'
     post = get_object_or_404(Post, pk=post_id)
-    comments = Comment.objects.filter(post=post)
+    comments = post.comments.all()
     form = CommentForm(request.POST or None)
     context = {
         'post': post,
@@ -88,7 +86,6 @@ def post_create(request):
 def post_edit(request, post_id):
     template = 'posts/create_post.html'
     post = get_object_or_404(Post, pk=post_id)
-    is_edit = True
     if post.author != request.user:
         return redirect('posts:post_detail', post_id=post.id)
     form = PostForm(
@@ -103,7 +100,7 @@ def post_edit(request, post_id):
         return redirect('posts:post_detail', post_id=post.id)
     context = {
         'form': form,
-        'is_edit': is_edit,
+        'is_edit': True,
         'post': post
     }
     return render(request, template, context)
@@ -137,10 +134,9 @@ def follow_index(request):
 @login_required
 def profile_follow(request, username):
     user = request.user
-    author = User.objects.get(username=username)
-    following_authors = user.follower.values_list('author', flat=True)
-    if user != author and author.id not in following_authors:
-        Follow.objects.create(user=user, author=author)
+    author = get_object_or_404(User, username=username)
+    if user != author:
+        Follow.objects.get_or_create(user=user, author=author)
     return redirect('posts:profile', username=username)
 
 

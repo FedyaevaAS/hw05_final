@@ -57,10 +57,19 @@ class PostsViewTests(TestCase):
     def setUp(self):
         self.user1 = User.objects.get(username='TestUser')
         self.user2 = User.objects.create_user(username='HasNoName')
+        self.user3 = User.objects.create_user(username='Follower')
         self.authorized_client1 = Client()
         self.authorized_client2 = Client()
+        self.authorized_client3 = Client()
         self.authorized_client1.force_login(self.user1)
         self.authorized_client2.force_login(self.user2)
+        self.authorized_client3.force_login(self.user3)
+        self.authorized_client3.get(
+            reverse(
+                'posts:profile_follow',
+                kwargs={'username': self.user1.username}
+            )
+        )
         cache.clear()
 
     def test_pages_uses_correct_template(self):
@@ -258,9 +267,9 @@ class PostsViewTests(TestCase):
         response3 = self.client.get('posts:index')
         self.assertNotEqual(response1.content, response3.content)
 
-    def test_follow_unfollow(self):
+    def test_follow(self):
         """Авторизованный пользователь может подписываться
-        на других пользователей и удалять их из подписок.
+        на других пользователей.
         """
         author = self.user
         self.authorized_client2.get(
@@ -273,7 +282,13 @@ class PostsViewTests(TestCase):
             author.id,
             self.user2.follower.values_list('author', flat=True)
         )
-        self.authorized_client2.get(
+
+    def test_unfollow(self):
+        """Авторизованный пользователь удалять их из подписок
+        других пользователей.
+        """
+        author = self.user
+        self.authorized_client3.get(
             reverse(
                 'posts:profile_unfollow',
                 kwargs={'username': author.username}
@@ -286,19 +301,18 @@ class PostsViewTests(TestCase):
 
     def test_new_post_follow(self):
         """Новая запись пользователя появляется в ленте тех,
-        кто на него подписан и не появляется в ленте тех, кто не подписан.
+        кто на него подписан.
         """
-        response1 = self.authorized_client2.get(
+        response = self.authorized_client2.get(
             reverse('posts:follow_index')
         )
-        self.assertNotContains(response1, self.post)
-        self.authorized_client2.get(
-            reverse(
-                'posts:profile_follow',
-                kwargs={'username': self.user.username}
-            )
-        )
-        response2 = self.authorized_client2.get(
+        self.assertNotContains(response, self.post)
+
+    def test_new_post_unfollow(self):
+        """Новая запись пользователя не появляется в ленте тех,
+        кто на него не подписан.
+        """
+        response = self.authorized_client3.get(
             reverse('posts:follow_index')
         )
-        self.assertContains(response2, self.post)
+        self.assertContains(response, self.post)

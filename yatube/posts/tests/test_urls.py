@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from django import urls
 
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
@@ -40,7 +41,7 @@ class PostsURLTests(TestCase):
             '/',
             f'/group/{PostsURLTests.group.slug}/',
             f'/profile/{PostsURLTests.user.username}/',
-            f'/posts/{PostsURLTests.post.id}/',
+            f'/posts/{PostsURLTests.post.id}/'
         ]
         for url in urls:
             with self.subTest(url=url):
@@ -49,8 +50,14 @@ class PostsURLTests(TestCase):
 
     def test_pages_for_authorized_user(self):
         """Страницы доступны авторизированному пользователю."""
-        response = self.authorized_client1.get('/create/')
-        self.assertEqual(response.status_code, HTTPStatus.OK)
+        urls = [
+            '/create/',
+            '/follow/'
+        ]
+        for url in urls:
+            with self.subTest(url=url):
+                response = self.authorized_client2.get(url)
+                self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_page_edit_post_for_author(self):
         """Страница по адресу /posts/<post_id>/edit/
@@ -78,13 +85,17 @@ class PostsURLTests(TestCase):
         )
 
     def test_page_edit_post_for_not_author(self):
-        """Страница по адресу /create/ перенаправит анонимного
-        пользователя на страницу логина.
-        """
-        response = self.guest_client.get('/create/')
-        self.assertRedirects(
-            response, '/auth/login/?next=/create/'
-        )
+        """Страницы перенаправят анонимного пользователя на страницу логина."""
+        urls = [
+            '/create/',
+            f'/profile/{PostsURLTests.user.username}/follow/',
+            f'/profile/{PostsURLTests.user.username}/unfollow/',
+            f'/posts/{PostsURLTests.post.id}/comment'
+        ]
+        for url in urls:
+            with self.subTest(url=url):
+                response = self.guest_client.get(url)
+                self.assertRedirects(response, f'/auth/login/?next={url}')
 
     def test_urls_uses_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
@@ -95,6 +106,7 @@ class PostsURLTests(TestCase):
             f'/posts/{PostsURLTests.post.id}/': 'posts/post_detail.html',
             '/create/': 'posts/create_post.html',
             f'/posts/{PostsURLTests.post.id}/edit/': 'posts/create_post.html',
+            '/follow/': 'posts/follow.html',
         }
         for adress, template in templates_url_names.items():
             with self.subTest(adress=adress):

@@ -24,6 +24,14 @@ class PostsCreateFormTests(TestCase):
             author=cls.user,
         )
         cls.form = PostForm()
+        cls.small_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x02\x00'
+            b'\x01\x00\x80\x00\x00\x00\x00\x00'
+            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
+            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
+            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
+            b'\x0A\x00\x3B'
+        )
 
     @classmethod
     def tearDownClass(cls):
@@ -40,17 +48,9 @@ class PostsCreateFormTests(TestCase):
         создаётся новая запись в базе данных.
         """
         posts_count = Post.objects.count()
-        small_gif = (
-            b'\x47\x49\x46\x38\x39\x61\x02\x00'
-            b'\x01\x00\x80\x00\x00\x00\x00\x00'
-            b'\xFF\xFF\xFF\x21\xF9\x04\x00\x00'
-            b'\x00\x00\x00\x2C\x00\x00\x00\x00'
-            b'\x02\x00\x01\x00\x00\x02\x02\x0C'
-            b'\x0A\x00\x3B'
-        )
         uploaded = SimpleUploadedFile(
             name='small.gif',
-            content=small_gif,
+            content=PostsCreateFormTests.small_gif,
             content_type='image/gif'
         )
         form_data = {
@@ -91,31 +91,20 @@ class PostsCreateFormTests(TestCase):
         )
         self.assertEqual(Post.objects.all().first().text, form_data['text'])
 
-    def test_send_comment(self):
-        """Комментировать посты может только авторизованный пользователь.
+    def test_send_comment_authorized_client(self):
+        """Авторизованный пользователь может комментировать посты.
         После успешной отправки комментарий появляется на странице поста.
         """
         comments_count = Comment.objects.count()
-        form_data1 = {
-            'text': 'Тестовый комментарий1',
-        }
-        form_data2 = {
-            'text': 'Тестовый комментарий2',
+        form_data = {
+            'text': 'Тестовый комментарий',
         }
         self.authorized_client.post(
             reverse(
                 'posts:add_comment',
                 kwargs={'post_id': PostsCreateFormTests.post.id}
             ),
-            data=form_data1,
-            follow=True
-        )
-        self.client.post(
-            reverse(
-                'posts:add_comment',
-                kwargs={'post_id': PostsCreateFormTests.post.id}
-            ),
-            data=form_data2,
+            data=form_data,
             follow=True
         )
         response = self.authorized_client.get(
@@ -125,7 +114,23 @@ class PostsCreateFormTests(TestCase):
             )
         )
         self.assertEqual(
-            form_data1['text'],
+            form_data['text'],
             response.context['comments'][0].text
         )
         self.assertEqual(Comment.objects.count(), comments_count + 1)
+
+    def test_send_comment_guest_client(self):
+        """Анонимный пользователь не может комментировать посты."""
+        comments_count = Comment.objects.count()
+        form_data = {
+            'text': 'Тестовый комментарий',
+        }
+        self.client.post(
+            reverse(
+                'posts:add_comment',
+                kwargs={'post_id': PostsCreateFormTests.post.id}
+            ),
+            data=form_data,
+            follow=True
+        )
+        self.assertEqual(Comment.objects.count(), comments_count)
