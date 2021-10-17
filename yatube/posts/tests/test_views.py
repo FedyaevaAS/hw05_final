@@ -284,7 +284,7 @@ class PostsViewTests(TestCase):
         )
 
     def test_unfollow(self):
-        """Авторизованный пользователь удалять их из подписок
+        """Авторизованный пользователь может удалять их из подписок
         других пользователей.
         """
         author = self.user
@@ -303,16 +303,38 @@ class PostsViewTests(TestCase):
         """Новая запись пользователя появляется в ленте тех,
         кто на него подписан.
         """
+        self.authorized_client2.get(
+            reverse(
+                'posts:profile_follow',
+                kwargs={'username': self.user1.username}
+            )
+        )
+        form_data = {
+            'text': 'Тестовый текст'
+        }
+        self.authorized_client1.post(
+            reverse('posts:post_create'),
+            data=form_data,
+            follow=True
+        )
         response = self.authorized_client2.get(
             reverse('posts:follow_index')
         )
-        self.assertNotContains(response, self.post)
+        self.assertContains(response, form_data['text'])
 
     def test_new_post_unfollow(self):
         """Новая запись пользователя не появляется в ленте тех,
         кто на него не подписан.
         """
-        response = self.authorized_client3.get(
+        form_data = {
+            'text': 'Тестовый текст'
+        }
+        self.authorized_client1.post(
+            reverse('posts:post_create'),
+            data=form_data,
+            follow=True
+        )
+        response = self.authorized_client2.get(
             reverse('posts:follow_index')
         )
-        self.assertContains(response, self.post)
+        self.assertNotContains(response, form_data['text'])
